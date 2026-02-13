@@ -13,4 +13,4 @@ htmlcov/
 .DS_Store
 backups/
 *.sql
-*.sql.gz
+*.sql.gz*.tar.gz
