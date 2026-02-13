@@ -28,6 +28,8 @@ class User(Base, TimestampMixin):
     referrals_confirmed: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     is_participant: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     last_subscription_check_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    contact_name: Mapped[str | None] = mapped_column(Text, nullable=True)
+    contact_phone: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class Referral(Base):

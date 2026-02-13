@@ -21,6 +21,8 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - ./google_credentials.json:/app/google_credentials.json:ro
     depends_on:
       db:
         condition: service_healthy

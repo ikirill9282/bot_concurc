@@ -17,6 +17,7 @@ from app.bot.router import build_router
 from app.config import Settings, get_settings
 from app.db.session import create_engine_and_session_factory
 from app.logging_setup import configure_logging, get_logger
+from app.services.google_sheets_service import GoogleSheetsService
 from app.web.health import healthz, readyz
 
 
@@ -58,6 +59,9 @@ def create_app(settings: Settings) -> web.Application:
     app["session_factory"] = session_factory
     app["polling_task"] = None
 
+    # Initialize Google Sheets service
+    google_sheets_service = GoogleSheetsService(settings, logger)
+
     async def on_startup(application: web.Application) -> None:
         if settings.skip_webhook_setup:
             if settings.bot_username:
@@ -78,6 +82,7 @@ def create_app(settings: Settings) -> web.Application:
                 "app_logger": logger,
                 "bot_username": bot_username,
                 "channel_url": channel_url,
+                "google_sheets_service": google_sheets_service,
             }
         )
 

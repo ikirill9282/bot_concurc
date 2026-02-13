@@ -26,6 +26,12 @@ class Settings(BaseSettings):
     app_port: int = Field(default=8080, alias="APP_PORT")
     channel_url: str | None = Field(default=None, alias="CHANNEL_URL")
 
+    # Google Sheets settings
+    google_sheets_enabled: bool = Field(default=False, alias="GOOGLE_SHEETS_ENABLED")
+    google_sheets_spreadsheet_id: str | None = Field(default=None, alias="GOOGLE_SHEETS_SPREADSHEET_ID")
+    google_sheets_worksheet_name: str = Field(default="Контакты", alias="GOOGLE_SHEETS_WORKSHEET_NAME")
+    google_sheets_credentials_path: str | None = Field(default=None, alias="GOOGLE_SHEETS_CREDENTIALS_PATH")
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

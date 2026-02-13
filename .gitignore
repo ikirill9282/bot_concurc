@@ -14,3 +14,5 @@ htmlcov/
 backups/
 *.sql
 *.sql.gz*.tar.gz
+google_credentials.json
+*credentials*.json

@@ -8,10 +8,15 @@ from aiogram.types import CallbackQuery
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from structlog.stdlib import BoundLogger
 
-from app.bot.callbacks import CHECK_SUBSCRIPTION_CALLBACK
+from aiogram.fsm.context import FSMContext
+
+from app.bot.callbacks import CHECK_SUBSCRIPTION_CALLBACK, REQUEST_CONTACT_CALLBACK
+from app.bot.handlers.contact import request_contact_info, request_simple_contact
 from app.bot.keyboards import build_subscription_keyboard
 from app.constants import INVALID_SUBSCRIPTION_STATUSES, VALID_SUBSCRIPTION_STATUSES
 from app.config import Settings
+from app.repositories.users import UsersRepository
+from app.services.google_sheets_service import GoogleSheetsService
 from app.services.subscription_service import (
     SubscriptionConfirmationResult,
     confirm_subscription_and_referral,
@@ -32,6 +37,8 @@ async def handle_check_subscription(
     app_logger: BoundLogger,
     bot_username: str,
     channel_url: str,
+    state: FSMContext,
+    google_sheets_service: GoogleSheetsService,
 ) -> None:
     if callback.from_user is None:
         await callback.answer()
@@ -93,6 +100,30 @@ async def handle_check_subscription(
     )
 
     if confirmation_result.referrer_to_notify is not None:
+        # Обновляем Google Sheets для реферера (асинхронно в фоне) только если у него есть контакт
+        async def _update_referrer_sheets():
+            async with session_factory() as session:
+                referrer = await UsersRepository.get_by_tg_user_id(session, confirmation_result.referrer_to_notify)
+                # Обновляем Google Sheets только если у реферера есть контактная информация
+                if referrer and referrer.contact_name and referrer.contact_phone:
+                    import asyncio
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(
+                        None,
+                        lambda: google_sheets_service.add_contact(
+                            tg_user_id=referrer.tg_user_id,
+                            username=referrer.username,
+                            telegram_first_name=referrer.first_name,
+                            telegram_last_name=referrer.last_name,
+                            contact_name=referrer.contact_name,
+                            contact_phone=referrer.contact_phone,
+                            is_subscribed=referrer.is_subscribed,
+                            is_participant=referrer.is_participant,
+                            referrals_confirmed=referrer.referrals_confirmed,
+                        ),
+                    )
+        import asyncio
+        asyncio.create_task(_update_referrer_sheets())
         if confirmation_result.referrer_is_participant:
             referrer_text = (
                 "Ваш друг подписался по вашей ссылке.\n"
@@ -134,6 +165,23 @@ async def handle_check_subscription(
         )
         return
 
+    # Если подписка только что подтверждена - запрашиваем контакт
+    if confirmation_result.user_subscription_changed and not confirmation_result.user_has_contact:
+        await callback.answer("Подписка подтверждена.")
+        if callback.message:
+            try:
+                await callback.message.delete()
+            except Exception:
+                pass
+        app_logger.info(
+            "requesting_simple_contact_after_subscription",
+            tg_user_id=callback.from_user.id,
+            has_contact=False,
+        )
+        await request_simple_contact(bot, callback.from_user.id, state, app_logger)
+        return
+
+    # Если подписка подтверждена и контакт есть, или пользователь стал участником
     response = "Спасибо, подписка подтверждена."
     referral_link = f"https://t.me/{bot_username}?start={callback.from_user.id}" if bot_username else ""
 

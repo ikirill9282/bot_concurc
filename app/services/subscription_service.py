@@ -25,6 +25,7 @@ class SubscriptionConfirmationResult:
     user_participant_changed: bool
     referrals_confirmed: int
     user_is_participant: bool
+    user_has_contact: bool
 
 
 def normalize_member_status(raw_status: object) -> str:
@@ -126,4 +127,5 @@ async def confirm_subscription_and_referral(
                 user_participant_changed=(not was_participant and user.is_participant),
                 referrals_confirmed=user.referrals_confirmed,
                 user_is_participant=user.is_participant,
+                user_has_contact=bool(user.contact_name and user.contact_phone),
             )

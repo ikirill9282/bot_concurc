@@ -9,6 +9,9 @@ def create_engine_and_session_factory(database_url: str) -> tuple[AsyncEngine, a
     engine = create_async_engine(
         database_url,
         pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+        pool_recycle=300,
         future=True,
     )
     session_factory = async_sessionmaker(
