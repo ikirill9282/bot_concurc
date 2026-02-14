@@ -14,7 +14,7 @@ from app.bot.keyboards import build_subscription_keyboard
 from app.services.referral_service import process_start_command
 
 router = Router(name=__name__)
-WELCOME_IMAGE_PATH = Path(__file__).resolve().parents[2] / "assets" / "welcome.jpg"
+WELCOME_IMAGE_PATH = Path(__file__).resolve().parents[2] / "assets" / "23 ПРИЗА (2).png"
 
 
 @router.message(CommandStart())
